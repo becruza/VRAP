@@ -5,11 +5,12 @@ import os
 
 app = Flask(__name__)
 api = Api(app)
-# jobstores = {'jobs': SQLAlchemyJobStore(url='sqlite:///db/jobs.sqlite')}
+# job_stores = {'jobs': SQLAlchemyJobStore(url='sqlite:///db/jobs.sqlite')}
 scheduler = BackgroundScheduler(daemon=True, timezone='America/Bogota')
 scheduler.add_jobstore('sqlalchemy', url='sqlite:///db/jobs.sqlite')
 #
 scheduler.start()
+
 
 class ScheduleSetter(Resource):
     def post(self):
@@ -51,14 +52,21 @@ class Schedule(Resource):
         scheduler.print_jobs()
         jobs = []
         for job in scheduler.get_jobs():
-            # print(f'{i}: {job.id} -- {job.__str__()}')
-            # scheduler.remove_job(job.id)
             jobs.append(f'{job.id} : {job.__str__()}')
         return jobs
 
     def post(self):
-        ch = 1
-        scheduler.add_job(start_recorder, 'cron', name='test', hour=12, minute=3, second=ch)
+        request.get_data()
+        json_data = request.get_json()
+        cron_params = {}
+        if json_data is not None:
+            for param in json_data:
+                if param == "camera":
+                    continue
+                cron_params[param] = json_data[param]
+        if "camera" in json_data:
+            json_data['camera'] = 1
+        scheduler.add_job(start_recorder, 'cron', [json_data['camera']], name='test', kwargs=cron_params)
         return 'Scheduler have been set'
 
     def delete(self):
@@ -70,10 +78,9 @@ class Schedule(Resource):
 
 
 # Job functions
-def start_recorder(ch=None):
+def start_recorder(channel=None):
     print('executing script...')
-    os.system(f'python stream.py {ch} &')
-    # os.system('python create_list.py &')
+    os.system(f'python stream.py {channel} &')
     print('script executed')
 
 
@@ -83,4 +90,3 @@ api.add_resource(Stream, '/stream')
 
 if __name__ == '__main__':
     app.run(debug=True)
-
