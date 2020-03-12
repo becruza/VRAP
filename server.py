@@ -8,37 +8,7 @@ api = Api(app)
 # job_stores = {'jobs': SQLAlchemyJobStore(url='sqlite:///db/jobs.sqlite')}
 scheduler = BackgroundScheduler(daemon=True, timezone='America/Bogota')
 scheduler.add_jobstore('sqlalchemy', url='sqlite:///db/jobs.sqlite')
-#
 scheduler.start()
-
-
-class ScheduleSetter(Resource):
-    def post(self):
-        json_data = request.get_json(force=True)
-        hour = None
-        minute = None
-        second = None
-        if json_data['hour']:
-            hour = json_data['hour']
-        if json_data['minute']:
-            minute = json_data['minute']
-        if json_data['second']:
-            if isinstance(json_data['second'], list):
-                second = ','.join(str(x) for x in json_data['second'])
-            else:
-                second = json_data['second']
-        scheduler.add_job(start_recorder, 'cron', name='test', hour=hour, minute=minute, second=second)
-        result = jsonify(hour=hour, minute=minute, second=second)
-        return result
-
-
-class Test(Resource):
-    def get(self):
-        os.system('python test.py')
-        # output = subprocess.run('python test.py', shell=True)
-        # print(output.stdout.__str__())
-        # print(output.stdout)
-        return "ok"
 
 
 class Stream(Resource):
@@ -61,12 +31,14 @@ class Schedule(Resource):
         cron_params = {}
         if json_data is not None:
             for param in json_data:
-                if param == "camera":
+                if param == "camera" or json_data[param] is None:
                     continue
                 cron_params[param] = json_data[param]
-        if "camera" in json_data:
+        if "camera" not in json_data:
             json_data['camera'] = 1
-        scheduler.add_job(start_recorder, 'cron', [json_data['camera']], name='test', kwargs=cron_params)
+        print(type(cron_params))
+        # scheduler.add
+        scheduler.add_job(start_recorder, 'cron', [json_data['camera']], **cron_params)
         return 'Scheduler have been set'
 
     def delete(self):
@@ -79,9 +51,10 @@ class Schedule(Resource):
 
 # Job functions
 def start_recorder(channel=None):
-    print('executing script...')
-    os.system(f'python stream.py {channel} &')
-    print('script executed')
+    for channel in range(4):
+        print('executing script...')
+        os.system(f'python stream.py {channel} &')
+        print('script executed')
 
 
 # Main

@@ -10,14 +10,13 @@ from zipfile import ZipFile
 timezone = pytz.timezone('America/Bogota')
 fmt = '%Y-%m-%d_%H:%M:%S'
 invoke_time = datetime.now().astimezone(timezone)
-channel = int(sys.argv[1])
+channel = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 
 
 def capture(url, sample_time=300):
     start_time = invoke_time.strftime(fmt)
     end_time = (invoke_time + timedelta(hours=1)).strftime(fmt)
     folder_name = f'{start_time}_{end_time}'
-    print(folder_name)
     os.system(f'mkdir {folder_name}')
     os.chdir(f'./{folder_name}')
     cap = cv2.VideoCapture(url)
@@ -31,7 +30,7 @@ def capture(url, sample_time=300):
             break
         if datetime.now() >= current_time + timedelta(seconds=sample_time):
             current_time = datetime.now()
-            img_name = f"{channel}->{current_time.astimezone(timezone).strftime(fmt)}.jpg"
+            img_name = f"channel{channel}_{current_time.astimezone(timezone).strftime(fmt)}.jpg"
             cv2.imwrite(img_name, frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -70,15 +69,19 @@ def zipper(files, folder_name):
 
 
 if __name__ == '__main__':
-    os.system(f'mkdir images/{channel}')
-    os.chdir(f'./images/{channel}')
+    os.system(f'mkdir images/channel{channel}')
+    os.chdir(f'./images/channel{channel}')
     # url = 'rtsp://admin:vaico2020@192.168.1.117:554/Streaming/Channels/101'
     url = '/home/vaico/Downloads/mp4/NVR_ch2_main_20200309080000_20200309090000.mp4'
+    x = datetime.now()
     folder_name = capture(url, sample_time=1)
+    print(f'Time capturing: {datetime.now() - x}')
     # folder_name = '2020-03-11_16:36:08_2020-03-11_17:36:08'
     # os.chdir(f'./{folder_name}')
     # print(os.getcwd())
     # files = glob.glob(f'{os.getcwd()}/*.jpg')
     # files = os.listdir(os.getcwd())
     files = glob.glob('*.jpg')
+    x = datetime.now()
     zipper(files, folder_name)
+    print(f'Time zipping: {datetime.now() - x}')
