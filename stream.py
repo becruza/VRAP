@@ -4,13 +4,16 @@ import os
 import sys
 import time
 import glob
+import requests
 from datetime import datetime, timedelta
 from zipfile import ZipFile
 
+bucket_url = 'https://j8wmps8gr0.execute-api.us-east-2.amazonaws.com/testing/upload'
 timezone = pytz.timezone('America/Bogota')
 fmt = '%Y-%m-%d_%H:%M:%S'
 invoke_time = datetime.now().astimezone(timezone)
 channel = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+mac = '00:11:22:AA:BB:CC'
 
 
 def capture(url, sample_time=300):
@@ -37,35 +40,50 @@ def capture(url, sample_time=300):
             break
         # elif datetime.now() >= start_time + timedelta(hours=1):
         #     break
-        elif datetime.now() >= start_time + timedelta(seconds=5):
+        elif datetime.now() >= start_time + timedelta(seconds=10):
             break
 
     cap.release()
     cv2.destroyAllWindows()
-
     return folder_name
 
 
 def zipper(files, folder_name):
-    if files is None:
-        print('No files to zip')
-    else:
+    if len(files) > 0:
         part = 1
-        while len(files) > 0:
-            with ZipFile(f'{folder_name}_{part}.zip', 'w') as zip_obj:
-                # Add multiple files to the zip
+        total_size = 0
+        zip_file = ZipFile(f'{folder_name}_{part}.zip', 'w')
+        for file in files:
+            zip_file.write(file)
+            # os.remove(file)
+            total_size += os.path.getsize(file)
+            if total_size >= 2000000:
                 total_size = 0
-                for file in files:
-                    if total_size >= 2000000:
-                        break
-                    zip_obj.write(file)
-                    total_size += os.path.getsize(file)
-                    files.pop(0)
+                zip_file.close()
+                part += 1
+                zip_file = ZipFile(f'{folder_name}_{part}.zip', 'w')
+                continue
+        for file in files:
+            os.remove(file)
+    else:
+        print('No files to zip')
 
-            part += 1
 
+def upload(files, mac):
+    for file in files:
+        response = requests.get(f'{bucket_url}?name={file}&observer={mac}')
+        signed_url = response.text
+        print(f'uploading {file}')
+        with open(file, "rb") as data:
+            up = requests.put(signed_url.replace('/us-east-2/', '/us-east-1/'), data=data)
 
-# def upload():
+        if 200 <= up.status_code < 300:
+            os.remove(file)
+            print(f'{file} uploaded...')
+
+        # f = open(file, 'rb')
+        # data = f.read()
+        # up = requests.put(signed_url.replace('/us-east-2/', '/us-east-1/'), data=data)
 
 
 if __name__ == '__main__':
@@ -73,15 +91,9 @@ if __name__ == '__main__':
     os.chdir(f'./images/channel{channel}')
     # url = 'rtsp://admin:vaico2020@192.168.1.117:554/Streaming/Channels/101'
     url = '/home/vaico/Downloads/mp4/NVR_ch2_main_20200309080000_20200309090000.mp4'
-    x = datetime.now()
     folder_name = capture(url, sample_time=1)
-    print(f'Time capturing: {datetime.now() - x}')
-    # folder_name = '2020-03-11_16:36:08_2020-03-11_17:36:08'
-    # os.chdir(f'./{folder_name}')
-    # print(os.getcwd())
-    # files = glob.glob(f'{os.getcwd()}/*.jpg')
-    # files = os.listdir(os.getcwd())
     files = glob.glob('*.jpg')
-    x = datetime.now()
     zipper(files, folder_name)
-    print(f'Time zipping: {datetime.now() - x}')
+    print('Uploading...')
+    files = glob.glob('*.zip')
+    upload(files, mac)
