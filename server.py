@@ -1,11 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_restful import Resource, Api
 from apscheduler.schedulers.background import BackgroundScheduler
 import os
 
 app = Flask(__name__)
 api = Api(app)
-# job_stores = {'jobs': SQLAlchemyJobStore(url='sqlite:///db/jobs.sqlite')}
 scheduler = BackgroundScheduler(daemon=True, timezone='America/Bogota')
 scheduler.add_jobstore('sqlalchemy', url='sqlite:///db/jobs.sqlite')
 scheduler.start()
@@ -15,6 +14,11 @@ class Stream(Resource):
     def get(self, ch=None):
         os.system('python stream.py &')
         return 'Streaming...'
+
+
+class Index(Resource):
+    def get(self):
+        return 'Running...'
 
 
 class Schedule(Resource):
@@ -60,6 +64,7 @@ def start_recorder(channel=None):
 # Main
 api.add_resource(Schedule, '/schedule')
 api.add_resource(Stream, '/stream')
+api.add_resource(Index, '/')
 
 if __name__ == '__main__':
     app.run(debug=True)
