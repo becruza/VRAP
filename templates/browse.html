@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+
+    <title>{{parent}}</title>
+</head>
+<body>
+    <h2>
+        {% if parent %}
+            {{parent}}
+        {% else %}
+            VRAP
+        {% endif %}
+    </h2>
+    <ul>
+        {% for item in files %}
+        <li><a href="/files/{{ item.path }}">{{ item.name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
