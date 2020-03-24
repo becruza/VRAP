@@ -1,10 +1,11 @@
 *.pyc
 *~
 __pycache__
-venv
-db.sqlite3
 /static
 .DS_Store
 .idea
 images
-test.py
+db
+config
+venv
+db.sqlite3

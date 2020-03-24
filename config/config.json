@@ -1,3 +1,25 @@
 {
-  "cameras": "01"
+  "cameras": [
+    {
+      "name": "IP FIJA IZQ",
+      "channel" : "1"
+    },
+    {
+      "name": "IP FIJA DER",
+      "channel" : "2"
+    },
+    {
+      "name": "PTZ Piso 28",
+      "channel" : "3"
+    },
+    {
+      "name": "PTZ Piso 13",
+      "channel" : "4"
+    }
+  ],
+  "NVR": {
+    "name": "Baluarte",
+    "IP" : "192.168.1.250",
+    "rtsp" : "544"
+  }
 }
